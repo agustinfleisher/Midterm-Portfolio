@@ -1,0 +1,214 @@
+---
+title: "STAT 331 Portfolio"
+author: "Agustin Fleisher"
+format: html 
+embed-resources: true
+layout: margin-left
+editor: visual
+execute: 
+  eval: false
+  echo: true
+---
+
+[**My Grade:**]{.underline}I believe my grade equivalent to course work evidenced below to be a D+ to C- (Acceptable Achievement), based strictly on the code shown meets D targets, some C-level evidence, missing joins, pivots, tables, and iteration. I am missing a lot of the criteria, also I do have all my code, however some if I go back and had trouble understanding it. So from just a pure understanding perspective, I am not very great.
+
+[**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Be sure to specify **where** the code came from (e.g., Lab 4 Question 2).
+
+## Working with Data
+
+WD-1: I can import data from a variety of formats (e.g., csv, xlsx, txt, etc.).
+
+#\| label: load-data teacher_evals \<- read_csv(here("Week 3", "teacher_evals", "teacher_evals.csv")) glimpse(teacher_evals)\
+\
+Lab 3, question 1
+
+WD-2: I can select necessary columns from a dataset.
+
+#\| label: data-cleaning teacher_evals_clean \<- teacher_evals \|\> rename(sex = gender) \|\> filter(no_participants \>= 10) \|\> mutate( teacher_id = as.character(teacher_id), course_id = as.character(course_id) ) \|\> select( course_id, teacher_id, question_no, no_participants, resp_share, SET_score_avg, percent_failed_cur, academic_degree, seniority, sex )
+
+glimpse(teacher_evals_clean)\
+\
+Lab 3, question 5
+
+WD-3: I can filter rows for a variety of data types.
+
+#\| label: data-cleaning teacher_evals_clean \<- teacher_evals \|\> rename(sex = gender) \|\> filter(no_participants \>= 10) \|\> mutate( teacher_id = as.character(teacher_id), course_id = as.character(course_id) ) \|\> select( course_id, teacher_id, question_no, no_participants, resp_share, SET_score_avg, percent_failed_cur, academic_degree, seniority, sex )
+
+glimpse(teacher_evals_clean)\
+\
+Lab 3, question 5
+
+WD-4: I can modify/create variables (numeric, factor, date, character).
+
+library(tidyverse)
+
+ggplot(data = ToothGrowth, mapping = aes(x = supp, y = len)) + geom_boxplot() + labs(x = "Supplement", y = "Length of Teeth (mm)")
+
+ToothGrowth %\>% mutate(dose = as.factor(dose)) %\>% ggplot(mapping = aes(x = dose, y = len)) + geom_boxplot() + labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")\
+\
+Lab 1, question 6
+
+WD-5: Mutating joins (left_join, right_join, inner_join)
+
+witness1_interview \<- witness1 \|\> inner_join(interview, join_by(id == person_id))
+
+witness2_interview \<- witness2 \|\> inner_join(interview, join_by(id == person_id))\
+\
+Lab 5
+
+WD-6: Filtering joins (semi_join, anti_join)
+
+N/A - Lab 4 I believe
+
+WD-7: Pivots (pivot_longer, pivot_wider)
+
+N/A - Lab 4 I believe
+
+Reproducibility
+
+R-1: Professional, reproducible analyses (RStudio projects, Quarto, here).
+
+#\| label: packages \
+library(tidyverse) \
+library(here)\
+\
+Lab 3
+
+R-2: Well-documented and tidy code.
+
+#\| echo: true\
+#\| label: creating-a-plot \
+#\| layout-ncol: 2 \
+#\| fig-align: center \
+#\| fig-cap: \["OJ group shows slightly higher tooth lengths on average", \
+#\| "Higher supplement doses lead to greater tooth growth"\]\
+\
+Lab 1, question 6
+
+R-3: Robust programs (resistant to changes in inputs).
+
+#\| label: teacher-course-asked-every-question\
+teacher_evals_clean \|\> \
+group_by(teacher_id, course_id) \|\>
+
+summarise(n_questions = n_distinct(question_no), .groups = "drop") \|\>
+
+filter(n_questions == 9) \|\>
+
+summarise(total = n())\
+\
+Lab 3, question 9
+
+Data Visualization & Summarization
+
+DVS-1: Visualizations for a variety of variable types.
+
+ggplot(data = ToothGrowth, mapping = aes(x = supp, y = len)) + geom_boxplot() + labs(x = "Supplement", y = "Length of Teeth (mm)")
+
+ToothGrowth %\>% mutate(dose = as.factor(dose)) %\>% ggplot(mapping = aes(x = dose, y = len)) + geom_boxplot() + labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")\
+\
+Lab 1, question 6
+
+DVS-2: Plot modifications (clarity).
+
+Accessible colors / legend order / text size
+
+labs(x = "Supplement", y = "Length of Teeth (mm)") ... labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")
+
+Lab 1, question 6
+
+DVS-3: Creativity in visualizations
+
+N/A\
+
+DVS-4: Numerical summaries.
+
+teacher_evals_clean \|\> \
+summarise( unique_instructors = n_distinct(teacher_id),
+
+unique_courses = n_distinct(course_id) )
+
+Lab 3, question 3
+
+DVS-5: Summaries across multiple groups.
+
+teacher_evals_clean \|\>
+
+group_by(teacher_id, course_id) \|\>
+
+summarise(n_questions = n_distinct(question_no), .groups = "drop") \|\> filter(n_questions == 9) \|\>
+
+summarise(total = n())
+
+Lab 3, question 3
+
+DVS-6: Readable tables (formatting gt/kable)
+
+N/A
+
+DVS-7: Creative tables
+
+N/A
+
+Program Efficiency
+
+PE-1: Concise code without repetition (single-call, across(), map()).
+
+N/A
+
+PE-2: Write functions to reduce repetition.
+
+standardize_df \<- function(df) { df \|\> \
+mutate(across(where(is.numeric), \~ scale(.x), .names = "{.col}\_std")) \
+}\
+\
+Challenge 3
+
+PE-3: Iteration (map, map2, pmap).
+
+map_dfr(file_paths, read_csv)\
+\
+Challenge 2
+
+PE-4: Modern tools; wrangling → ggplot().
+
+ToothGrowth %\>% mutate(dose = as.factor(dose)) %\>% ggplot(mapping = aes(x = dose, y = len)) + geom_boxplot() + labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")
+
+Lab 1, question 6
+
+Data Simulation & Statistical Models
+
+DSSM-1: Simulate data.
+
+N/A - Don't understand if I have that
+
+DSSM-2: Common statistical analyses.
+
+Welch two-sample t-test
+
+t.test(len \~ supp, data = ToothGrowth, var.equal = FALSE)\
+\
+Lab 1, question 9
+
+<!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
+
+I revised my thinking throughout the code examples by either looking at notes on my assignments or from 1 on 1 interactions with peers outside of class and getting feedback.
+
+<!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
+
+This was my before: #\| label: row-identification teacher_evals \|\> dplyr::count(teacher_id, course_id, question_no, name = "rows_per_combo") \|\> dplyr::arrange(desc(rows_per_combo)) \|\> head()
+
+This was after: #\| label: row-identification teacher_evals \|\> count(teacher_id, course_id, question_no, name = "rows_per_combo") \|\> arrange(desc(rows_per_combo)) \|\> head()
+
+<!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
+
+I extending my thinking throughout the course by just trying to simply my code which is difficult for me. I think my code examples are all pretty concise versions of what they were at first.
+
+## Peer Support & Collaboration
+
+<!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). -->
+
+I have not done every peer review, but this is an example of one I have written:\
+"Clean, readable formatting/consistent line breaks, named arguments, and solid indentation. Two small tweaks: add brief comments before major steps and use clear chunk labels (e.g., load-data, clean-evals) for skimmability. For long pipes, keep one verb per line. Maybe for plots/tables, make sure axis labels and captions stand alone. Overall, polished work, and much better understanding of the code than me, haha, nice job!" (I am proud of this because I noticed something that I would change as opposed to my other peer reviews which I just complimented them on)
+
+## <!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   --> At the beginning, one of my partners was Liam and we were partners somehow like 3 times and we gelled really well together. But I did grow when I got another partner because it wasn't so smooth as his pace was different and I had to adapt to him and it was a good experience. But overall my patience remained the same because my knowledge of the code seems to be much lower than my peers so I always enjoy working with people when I get the chance. 
