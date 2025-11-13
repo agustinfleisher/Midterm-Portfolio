@@ -1,0 +1,395 @@
+---
+title: "STAT 331 Portfolio"
+author: "Agustin Fleisher"
+format: html 
+embed-resources: true
+layout: margin-left
+editor: visual
+execute: 
+  eval: false
+  echo: true
+---
+
+[**My Grade:**]{.underline}I believe my grade equivalent to course work evidenced below to be a C (Acceptable Achievement), based strictly on the code shown (meets D targets, some C-level evidence; missing joins, pivots, tables, iteration, and simulation).
+
+[**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Be sure to specify **where** the code came from (e.g., Lab 4 Question 2).
+
+## Working with Data
+
+WD-1: I can import data from a variety of formats (e.g., csv, xlsx, txt, etc.).
+
+csv Example 1
+Source: Lab 3 → Section “The Data”
+
+library(tidyverse)
+library(here)
+
+teacher_evals <- read_csv(here("Week 3", "teacher_evals", "teacher_evals.csv"))
+
+
+csv Example 2
+Source: Lab 2 → Q1 (“Using the read_csv()… name the data surveys”) and Section “Reading the Data into R”
+
+library(tidyverse)
+library(here)
+
+surveys <- read_csv(here("data", "surveys.csv"), show_col_types = FALSE)
+
+
+xlsx
+No evidence in Labs 1–3 submitted.
+
+# (not present in submitted labs)
+
+
+WD-2: I can select necessary columns from a dataset.
+
+Example selecting specified columns
+Source: Lab 3 → Section “Data Inspection + Summary”
+
+teacher_evals_clean <- teacher_evals |>
+  rename(sex = gender) |>
+  filter(no_participants >= 10) |>
+  mutate(
+    teacher_id = as.character(teacher_id),
+    course_id  = as.character(course_id)
+  ) |>
+  select(
+    course_id, teacher_id, question_no, no_participants, resp_share,
+    SET_score_avg, percent_failed_cur, academic_degree, seniority, sex
+  )
+
+glimpse(teacher_evals_clean)
+
+
+Example removing specified columns
+No select(-...) in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Example selecting with helpers (starts_with(), where(), etc.)
+No evidence in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+WD-3: I can filter rows for a variety of data types.
+
+Numeric Example 1
+Source: Lab 3 → Section “Rate my Professor”
+
+teacher_evals_clean |>
+  filter(seniority == 1) |>
+  group_by(teacher_id) |>
+  summarise(avg_fail = mean(percent_failed_cur, na.rm = TRUE)) |>
+  summarise(
+    highest_fail = max(avg_fail),
+    lowest_fail  = min(avg_fail)
+  )
+
+
+Numeric Example 2
+Source: Lab 3 → Section “Data Inspection + Summary”
+
+teacher_evals |>
+  count(teacher_id, course_id, question_no, name = "rows_per_combo") |>
+  arrange(desc(rows_per_combo)) |>
+  head()
+
+
+Character Example (any context)
+No character-equality filter in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Character Example using stringr
+No stringr::str_* usage in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Date Example using lubridate
+No lubridate usage in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+WD-4: I can modify/create variables (numeric, factor, date, character).
+
+Numeric (mutate)
+Source: Lab 1 → Q6 (first half of the chunk creates plots; mutate precedes plotting)
+
+library(tidyverse)
+
+ToothGrowth %>%
+  mutate(dose = as.factor(dose)) %>%
+  ggplot(mapping = aes(x = dose, y = len)) +
+  geom_boxplot() +
+  labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")
+
+
+Factor (renaming levels) / (reordering levels)
+No explicit fct_recode / fct_relevel in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Character via stringr
+No stringr mutate examples in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Date via lubridate
+No lubridate mutate examples in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+WD-5: Mutating joins (left_join, right_join, inner_join)
+No evidence in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+WD-6: Filtering joins (semi_join, anti_join)
+No evidence in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+WD-7: Pivots (pivot_longer, pivot_wider)
+No evidence in Labs 1–3.
+
+# (not present in submitted labs)
+
+Reproducibility
+
+R-1: Professional, reproducible analyses (RStudio projects, Quarto, here).
+
+Quarto YAML options
+Source: Lab 1 → YAML (top) and Lab 2 → YAML (top) (rendered in HTML at bottom “Source Code”)
+
+execute:
+  echo: true
+  error: true
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    toc: true
+    theme: litera
+
+
+Project-relative paths with here()
+Source: Lab 2 → Q1 / Reading the Data, Lab 3 → The Data
+
+library(here)
+surveys <- read_csv(here("data", "surveys.csv"), show_col_types = FALSE)
+teacher_evals <- read_csv(here("Week 3", "teacher_evals", "teacher_evals.csv"))
+
+
+R-2: Well-documented and tidy code.
+
+ggplot2 plotting (labels + theme)
+Source: Lab 2 → Q10–Q15 within Sections “Scatterplot” / “Boxplots”
+
+ggplot(data = surveys,
+       mapping = aes(x = species, y = weight)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(color = "steelblue", alpha = 0.5) +
+  labs(
+    title = "Distribution of Rodent Weights by Species",
+    x = "Species",
+    y = "Weight (grams)"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+dplyr pipeline (grouped summary)
+Source: Lab 3 → Section “Data Inspection + Summary”
+
+teacher_evals_clean |>
+  group_by(teacher_id, course_id) |>
+  summarise(n_questions = n(), .groups = "drop")
+
+
+Example of function formatting
+No user-defined functions in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+R-3: Robust programs (resistant to changes in inputs).
+No parameterized analysis / guards in Labs 1–3.
+
+# (not present in submitted labs)
+
+Data Visualization & Summarization
+
+DVS-1: Visualizations for a variety of variable types.
+
+Numeric + Categorical
+Source: Lab 2 → Q10–Q13 (“Boxplots + jitter”)
+
+ggplot(surveys, aes(x = species, y = weight)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5)
+
+
+Two numeric variables
+No numeric–numeric scatter saved in HTML.
+
+# (not present in submitted labs)
+
+
+Two categorical variables
+Not present in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+Dates (time series)
+Not present in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+DVS-2: Plot modifications (clarity).
+
+Theme/text angle
+Source: Lab 2 → Q15
+
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+Titles/labels
+Source: Lab 2 → Q7, Q8, Q15
+
+labs(title = "Distribution of Rodent Weights by Species",
+     x = "Species", y = "Weight (grams)")
+
+
+Accessible colors / legend order / text size
+Not shown beyond basic theming.
+
+# (not present in submitted labs)
+
+
+DVS-3: Creativity in visualizations
+No annotations/ribbons/custom geoms in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+DVS-4: Numerical summaries.
+
+Using summarise()
+Source: Lab 3 → Section “Data Inspection + Summary”
+
+teacher_evals_clean |>
+  summarise(
+    unique_instructors = n_distinct(teacher_id),
+    unique_courses     = n_distinct(course_id)
+  )
+
+
+DVS-5: Summaries across multiple groups.
+
+Grouped counts
+Source: Lab 3 → Section “Data Inspection + Summary”
+
+instructors <- teacher_evals_clean |> distinct(teacher_id, .keep_all = TRUE)
+instructors |> count(academic_degree)
+
+instructors |> count(sex)
+
+
+DVS-6: Readable tables (formatting gt/kable)
+No formatted tables in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+DVS-7: Creative tables
+No creative table layout/colors in Labs 1–3.
+
+# (not present in submitted labs)
+
+Program Efficiency
+
+PE-1: Concise code without repetition (single-call, across(), map()).
+No across()/map() examples in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+PE-2: Write functions to reduce repetition.
+No user functions in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+PE-3: Iteration (map, map2, pmap).
+No iteration in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+PE-4: Modern tools; wrangling → ggplot().
+Source: Lab 2 → plotting pipeline (modern tidyverse + piping to ggplot)
+
+ggplot(surveys, aes(x = weight, y = species)) + 
+  geom_point() + 
+  theme_minimal()
+
+Data Simulation & Statistical Models
+
+DSSM-1: Simulate data.
+No simulations in Labs 1–3.
+
+# (not present in submitted labs)
+
+
+DSSM-2: Common statistical analyses.
+
+Welch two-sample t-test
+Source: Lab 1 → Q9
+
+t.test(len ~ supp, data = ToothGrowth, var.equal = FALSE)
+
+
+One-way ANOVA
+Source: Lab 2 → Q17 (with Q18 written interpretation shown in HTML)
+
+summary(aov(weight ~ species, data = surveys))
+## Revising My Thinking
+
+<!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? --> I revised my thinking throughout the code examples by either looking at notes on my assignments or from 1 on 1 interactions with peers outside of class and getting feedback.
+
+<!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
+This was my before: #| label: row-identification
+teacher_evals |>
+  dplyr::count(teacher_id, course_id, question_no, name = "rows_per_combo") |>
+  dplyr::arrange(desc(rows_per_combo)) |>
+  head()
+
+This was after: #| label: row-identification
+teacher_evals |>
+  count(teacher_id, course_id, question_no, name = "rows_per_combo") |>
+  arrange(desc(rows_per_combo)) |>
+  head()
+## Extending My Thinking
+
+<!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? --> I extending my thinking throughout the course by honestly just trying to simply my code which is difficult for me. I think my code examples are all pretty nice concise versions of what they were at first.
+
+## Peer Support & Collaboration
+
+<!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). --> 
+
+Clean, readable formatting/consistent line breaks, named arguments, and solid indentation. Two small tweaks: add brief comments before major steps and use clear chunk labels (e.g., load-data, clean-evals) for skimmability. For long pipes, keep one verb per line. Maybe for plots/tables, make sure axis labels and captions stand alone. Overall, polished work, and much better understanding of the code than me, haha, nice job! (I am proud of this because I noticed something that I would change as opposed to my other peer reviews which I just complimented them on)
+
+<!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   --> Honestly I didn't grow too much just because one of my partners was Liam and we were partners somehow like 3 times and we gelled really well together. But I did grow when I got another partner because it wasn't so smooth as his pace was different and I had to adapt to him and it was a good experience.
+---
