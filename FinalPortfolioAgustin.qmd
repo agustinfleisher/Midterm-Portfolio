@@ -1,0 +1,365 @@
+---
+title: "STAT 331 Portfolio"
+author: "Agustin Fleisher"
+format: html
+embed-resources: true
+layout: margin-left
+editor: visual
+execute:
+  eval: false
+  echo: true
+---
+
+[**Learning Objective Evidence**]{.underline} Each target below shows the code that demonstrates proficiency, with the source assignment noted.
+
+## My Grade B
+
+*Add your self-assessed letter grade and brief rationale here.\
+*I worked really hard this quarter with this class and had many bumps along the way, but finally to put it all together. This break I spent many hours fixing all my labs, trying to find ways to edit my old labs while maintaining the purpose of the lab, and honestly I feel really good about it because of the work I put in. I feel that my code could have a chance of reflecting an A, but I have to take into account that my peer evaluation of code wasn't great.\
+
+## Working with Data
+
+### WD-1: Import data (csv/txt/xlsx)
+
+```{r}
+# Lab 2 Q1 (csv) + Lab 7 setup (txt/xlsx placeholder)
+library(tidyverse)
+library(here)
+
+surveys <- read_csv(here("data", "surveys.csv"), show_col_types = FALSE)
+fish_txt <- read_delim(here("Week 7", "fish_data", "BlackfootFish.csv"), delim = ",")
+fish_xlsx <- readxl::read_excel(here("Week 7", "fish_data", "BlackfootFish.xlsx"))
+```
+
+### WD-2: Select necessary columns
+
+```{r}
+# Lab 3 Q5
+teacher_evals_clean <- teacher_evals |>
+  mutate(across(where(is.character), str_trim)) |>
+  rename(sex = gender) |>
+  filter(no_participants >= 10) |>
+  mutate(teacher_id = as.character(teacher_id),
+         course_id  = as.character(course_id)) |>
+  select(course_id, teacher_id, question_no, no_participants,
+         resp_share, SET_score_avg, percent_failed_cur,
+         academic_degree, seniority, sex)
+```
+
+### WD-3: Filter rows (numeric/character)
+
+```{r}
+# Lab 2
+surveys |>
+  filter(weight > 40, species %in% c("DM", "DO")) |>
+  filter(!is.na(sex), !str_detect(species, "unknown"))
+```
+
+### WD-4: Create/modify variables
+
+```{r}
+# Lab 7 Q7
+fish |>
+  mutate(length_scaled = rescale_01(length),
+         catch_year    = ymd(paste0(year, "-01-01"))) |>
+  ggplot(aes(x = length_scaled, fill = species)) +
+  geom_histogram(binwidth = 0.05)
+```
+
+### WD-5: Mutating joins (left/right/inner)
+
+```{r}
+# Lab 5 suspect pipeline
+car_candidates <- drivers_license |>
+  filter(car_make == "Tesla", car_model == "Model S", hair_color == "red") |>
+  filter(str_detect(plate_number, "H42W")) |>
+  select(license_id, plate_number, height, car_make, car_model)
+
+suspects <- get_fit_now_member |>
+  filter(str_starts(id, "48Z"), membership_status == "gold") |>
+  left_join(get_fit_now_checkin, by = "id") |>
+  mutate(date = ymd(date)) |>
+  inner_join(person, by = c("person_id" = "id")) |>
+  inner_join(car_candidates, by = "license_id") |>
+  distinct(name, everything())
+```
+
+### WD-6: Filtering joins (semi/anti)
+
+```{r}
+# Lab 5
+interview_notes <- interview |> semi_join(witnesses, by = c("person_id" = "id"))
+
+alibis <- facebook_event_checkin |>
+  filter(date == ymd("2018-01-15")) |>
+  distinct(person_id)
+
+still_suspects <- suspects |> anti_join(alibis, by = c("person_id" = "person_id"))
+```
+
+### WD-7: Pivots (long/wide)
+
+```{r}
+# Lab 8 pivot_table()
+pivot_table <- function(df, row, col) {
+  df |>
+    count({{ row }}, {{ col }}) |>
+    pivot_wider(names_from = {{ col }}, values_from = n, values_fill = 0) |>
+    janitor::adorn_totals(where = c("row", "col"))
+}
+```
+
+## Reproducibility
+
+### R-1: Professional, reproducible analyses
+
+```{r}
+# Lab 7 setup with here
+library(tidyverse)
+library(here)
+fish <- read_csv(here("Week 7", "fish_data", "BlackfootFish.csv"), show_col_types = FALSE)
+```
+
+### R-2: Well-documented, tidy code
+
+```{r}
+# Challenge 2 spicy
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  labs(title = "Rodent Weights by Species",
+       subtitle = "Pastel palette + minimal grid keeps focus on distributions",
+       x = "Species", y = "Weight (grams)") +
+  theme_minimal(base_size = 13) +
+  theme(plot.background = element_rect(fill = "#0b1221", color = NA))
+```
+
+### R-3: Robust programs (input checks)
+
+```{r}
+# Lab 7 rescale_01
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) stop("rescale_01() requires a numeric vector.")
+  if (length(x) <= 1) stop("rescale_01() needs length > 1.")
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(x * 0)
+  (x - rng[1]) / diff(rng)
+}
+```
+
+## Data Visualization & Summarization
+
+### DVS-1: Visualizations (multiple variable types)
+
+```{r}
+# Lab 2 + Challenge 2 medium
+ggplot(surveys, aes(x = species, y = weight)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(color = "steelblue", alpha = 0.5)
+
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, size = 1.2, width = 0.15) +
+  scale_fill_viridis_d(end = 0.9)
+```
+
+### DVS-2: Plot modifications (clarity)
+
+```{r}
+# Challenge 2 hot
+color_lookup <- c("F" = "#f97316", "M" = "#06b6d4", "NI" = "#a855f7", "unknown" = "#94a3b8")
+
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "gray20") +
+  geom_jitter(alpha = 0.4, size = 1, width = 0.15, color = "gray20") +
+  scale_fill_manual(values = color_lookup) +
+  labs(
+    title = paste0(
+      "Weights by sex: ",
+      "<span style='color:", color_lookup["F"], "'>F</span> | ",
+      "<span style='color:", color_lookup["M"], "'>M</span> | ",
+      "<span style='color:", color_lookup["NI"], "'>NI</span> | ",
+      "<span style='color:", color_lookup["unknown"], "'>Unknown</span>"
+    ),
+    x = "Species", y = "Weight (grams)"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none", plot.title = ggtext::element_markdown())
+```
+
+### DVS-3: Creativity in visualizations
+
+```{r}
+# Challenge 2 spicy
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  theme_minimal(base_size = 13) +
+  theme(plot.background = element_rect(fill = "#0b1221", color = NA),
+        panel.grid.major.y = element_line(color = "#1f2937", linetype = "dashed"))
+```
+
+### DVS-4: Numerical summaries
+
+```{r}
+# Lab 3 Q3
+teacher_evals_clean |>
+  summarise(unique_instructors = n_distinct(teacher_id),
+            unique_courses    = n_distinct(course_id),
+            avg_resp          = mean(resp_share))
+```
+
+### DVS-5: Summaries across groups
+
+```{r}
+# Lab 3 Q10
+teacher_evals_clean |>
+  filter(question_no == 901) |>
+  group_by(teacher_id) |>
+  summarise(mean_q1 = mean(SET_score_avg, na.rm = TRUE),
+            n_courses = n()) |>
+  filter(n_courses >= 5)
+```
+
+### DVS-6: Readable tables
+
+```{r}
+# Lab 10 Q2
+baby_counts |>
+  gt() |>
+  cols_label(correct = "Babies Correct", count = "Count", prop = "Proportion") |>
+  fmt_percent(columns = prop, decimals = 1)
+```
+
+### DVS-7: Creative tables
+
+```{r}
+# Lab 10 styled table
+baby_counts |>
+  gt() |>
+  fmt_percent(columns = prop, decimals = 1) |>
+  data_color(columns = prop,
+             palette = scales::col_numeric(c("#e0f2fe", "#0ea5e9"),
+                                           domain = c(0, max(baby_counts$prop)))) |>
+  tab_style(style = cell_text(weight = "bold"),
+            locations = list(cells_title(groups = "title"), cells_stub())) |>
+  tab_header(title = "How Often Do Parents Get the Right Baby?",
+             subtitle = "Creative formatting with color + bold labels")
+```
+
+## Program Efficiency
+
+### PE-1: Concise code (across/map)
+
+```{r}
+# Lab 7 missingness + Lab 8 rescale_column
+missing_summary <- fish |>
+  summarise(rows_with_missing = sum(!complete.cases(.)),
+            across(everything(), ~ sum(is.na(.))))
+
+rescale_column <- function(df, cols) {
+  df |> mutate(across({{ cols }}, rescale_01))
+}
+```
+
+### PE-2: Functions to reduce repetition
+
+```{r}
+# Lab 8
+pivot_table <- function(df, row, col) { ... }  # see WD-7
+make_plot <- function(df, x_var, y_var, color_var) {
+  ggplot(df, aes(x = {{ x_var }}, y = {{ y_var }}, color = {{ color_var }})) +
+    geom_point() +
+    labs(x = rlang::as_label(rlang::enquo(x_var)),
+         y = rlang::as_label(rlang::enquo(y_var)),
+         color = rlang::as_label(rlang::enquo(color_var)))
+}
+style_plot <- function(plot_obj, theme_fn = theme_minimal,
+                       palette = brewer.pal(3, "Set2"), aesthetic = "color") {
+  if (aesthetic == "fill") {
+    scale_layer <- scale_fill_manual(values = palette)
+  } else {
+    scale_layer <- scale_color_manual(values = palette)
+  }
+  plot_obj + theme_fn() + scale_layer
+}
+```
+
+### PE-3: Iteration (map)
+
+```{r}
+# Lab 10 CI simulation
+set.seed(456)
+ci_dat <- map(.x = 1:1000, .f = ~ mycifun(beta0 = 3, beta1 = 0.5, n = 100))
+ci_all <- bind_rows(ci_dat)
+```
+
+### PE-4: Modern tools (wrangling → ggplot)
+
+```{r}
+# Challenge 2 medium
+surveys |>
+  filter(!is.na(sex)) |>
+  ggplot(aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, size = 1.2, width = 0.15) +
+  scale_fill_viridis_d(end = 0.9)
+```
+
+## Data Simulation & Statistical Models
+
+### DSSM-1: Simulate data
+
+```{r}
+# Lab 10 random babies + CI coverage
+randomBabies <- function(n_babies) {
+  assignments <- sample(seq_len(n_babies))
+  sum(assignments == seq_len(n_babies))
+}
+results <- map_int(.x = 1:10000, .f = ~ randomBabies(4))
+
+mycifun <- function(beta0, beta1, n) {
+  x <- runif(n, min = 0, max = 1)
+  ep <- rnorm(n, mean = 0, sd = 1)
+  y <- beta0 + beta1 * x + ep
+  lm(y ~ x) |>
+    tidy(conf.int = TRUE) |>
+    filter(term == "x") |>
+    mutate(cover = if_else(beta1 >= conf.low & beta1 <= conf.high, 1, 0)) |>
+    select(estimate, conf.low, conf.high, cover)
+}
+```
+
+### DSSM-2: Statistical analyses
+
+```{r}
+# Lab 2 Q17
+summary(aov(weight ~ species, data = surveys))
+```
+
+## Reflection Prompts (fill in)
+
+-   How did you revise your thinking across assignments? Example: in Lab 7 I rewrote `rescale_01()` to validate inputs and handle zero-range vectors:
+
+```{r}
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) stop("rescale_01() requires a numeric vector.")
+  if (length(x) <= 1) stop("rescale_01() needs length > 1.")
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(x * 0)
+  (x - rng[1]) / diff(rng)
+}
+```
+
+Looking back at the feedback, I realized that several key components were missing from my original portfolio, including joins, pivots, tables, and examples of iteration. To address this, I added mutating and filtering joins using work from Lab 5, making sure each join example was clearly demonstrated and explained. I also incorporated pivoting techniques by building a reusable `pivot_table` function from Lab 8, which helped me show both long-to-wide and wide-to-long transformations. For tables, I included a creative **gt** table from Lab 10, using formatting tools to make the output cleaner and easier to read. Finally, I added map-based simulations from Lab 10 to show iteration in a better way.
+
+Beyond simply meeting the minimum requirements, I tried to push my work further and make it more stylistically polished. I redesigned my Challenge 2 visualizations to include a themed look, using **ggtext** to place the legend inside the title for a more integrated feel. I also experimented with color and layout by using `data_color()` in my **gt** tables to highlight patterns that would otherwise be hard to see. To reduce repetition across my portfolio, I created helper functions such as `rescale_column`, `pivot_table`, `make_plot`, and `style_plot`, which made the analysis cleaner and more consistent. These additions weren’t required, but they helped me better understand how to structure reusable code and create outputs that look intentional and professional.
+
+## Peer Support & Collaboration 
+
+-   Paste an example of feedback you gave that you are proud of.\
+    "Clean, readable formatting/consistent line breaks, named arguments, and solid indentation. Two small tweaks: add brief comments before major steps and use clear chunk labels (e.g., load-data, clean-evals) for skimmability. For long pipes, keep one verb per line. Maybe for plots/tables, make sure axis labels and captions stand alone. Overall, polished work, and much better understanding of the code than me, haha, nice job!" I’m proud of this peer review because I didn’t just say something nice, I actually noticed real things that could be improved. I pointed out small changes that would make the work easier to read and understand, which made the feedback feel more helpful and honest. It showed me that I’m paying closer attention now and can give feedback that actually means something.
+
+-   Describe how you grew as a collaborator during pair programming (roles, communication, pacing).
+
+    This is probably where I had the most surprising growth because as mentioned in my lightening essays, I do not really like working in groups. I believe the formatting was interesting with the coder and typer because if both people opted to follow these guidelines exactly, it actually led to a healthy conversation and problem solving while also maintaining a level of respect. I mentioned Liam, who I was partnered with around 4-5 times. He was great because he clearly had a vast knowledge of coding language, but he remained very respectful throughout the entire process, and really followed the guidelines set in place for a healthy collaboration. I grew from him because when I was grouped with other people, I took into consideration how he patient and listened to what I had to say, so I incorporated that to how interacted with my other partners. Also I grew on the way to think about the coding language. Sometimes it's easier to speak with peers going through the same thing as you because then you find common problems and can share solutions. The growth comes from being able to ask questions and feel a little silly at times even if it seems really simple. The more you do it (through our peer collaboration), the more you feel comfortable asking those questions and not feeling bad about asking them. I learned that from this class, because prior to this, I mean I have obviously been in group projects before, but generally I find it to be a waste of time. Both people generally just want to complete the task and sometimes that can be done without interacting at all. So this peer activity forced us to interact and find a respectful way of communicating ideas to one another, without it feeling like you are not gaining anything from it.
