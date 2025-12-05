@@ -1,0 +1,777 @@
+---
+title: "STAT 331 Portfolio"
+author: "Agustin Fleisher"
+format: html 
+embed-resources: true
+layout: margin-left
+editor: visual
+execute: 
+  eval: false
+  echo: true
+---
+
+## My Grade B
+
+*Add your self-assessed letter grade and brief rationale here.\
+*I worked really hard this quarter with this class and had many bumps along the way, but finally to put it all together. This break I spent many hours fixing all my labs, trying to find ways to edit my old labs while maintaining the purpose of the lab, and honestly I feel really good about it because of the work I put in. I feel that my code could have a chance of reflecting an A, but I have to take into account that my peer evaluation of code wasn't great.\
+
+[**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Each example notes the source.
+
+```{r}
+#| label: global-packages
+library(tidyverse)
+library(here)
+library(readxl)
+library(lubridate)
+library(stringr)
+library(forcats)
+library(ggtext)
+library(janitor)
+library(gt)
+library(scales)
+```
+
+## Working with Data
+
+**WD-1: I can import data from a *variety* of formats (e.g., csv, xlsx, txt, etc.).**
+
+-   `csv` Example 1 (Lab 2)
+
+```{r}
+#| label: wd-1-csv-1
+surveys <- read_csv(
+  here("Week 2", "Lab 2", "data", "surveys.csv"),
+  show_col_types = FALSE
+)
+```
+
+-   `csv` Example 2 (Lab 3)
+
+```{r}
+#| label: wd-1-csv-2
+teacher_evals <- read_csv(
+  here("Week 3", "teacher_evals", "teacher_evals.csv"),
+  show_col_types = FALSE
+)
+```
+
+-   `xlsx` (guarded read; Lab 7 placeholder)
+
+```{r}
+#| label: wd-1-xlsx
+fish_xlsx <- if (file.exists(here("Week 7", "fish_data", "BlackfootFish.xlsx"))) {
+  read_excel(here("Week 7", "fish_data", "BlackfootFish.xlsx"))
+} else {
+  NULL
+}
+```
+
+**WD-2: I can select necessary columns from a dataset.**
+
+-   Example selecting specified columns (Lab 3)
+
+```{r}
+#| label: wd-2-ex-1
+teacher_evals_clean <- teacher_evals |>
+  rename(sex = gender) |>
+  filter(no_participants >= 10) |>
+  mutate(
+    teacher_id = as.character(teacher_id),
+    course_id  = as.character(course_id)
+  ) |>
+  select(course_id, teacher_id, question_no, no_participants,
+         resp_share, SET_score_avg, percent_failed_cur,
+         academic_degree, seniority, sex)
+```
+
+-   Example removing specified columns (Lab 2)
+
+```{r}
+#| label: wd-2-ex-2
+surveys_trimmed <- surveys |> select(-c(record_id, genus, taxon))
+```
+
+-   Example selecting columns based on logical values (Lab 2)
+
+```{r}
+#| label: wd-2-ex-3
+surveys_helpers <- surveys |> select(starts_with("species"), ends_with("type"))
+```
+
+**WD-3: I can filter rows from a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
+
+-   Numeric Example 1 (Lab 2)
+
+```{r}
+#| label: wd-3-numeric-ex-1
+surveys |> filter(weight > 40, hindfoot_length > 30)
+```
+
+-   Numeric Example 2 (Lab 3)
+
+```{r}
+#| label: wd-3-numeric-ex-2
+teacher_evals_clean |> filter(resp_share >= 0.5)
+```
+
+-   Character Example 1 (Lab 2)
+
+```{r}
+#| label: wd-3-character
+surveys |> filter(species_id == "DM")
+```
+
+-   Character Example 2 using stringr (Lab 2)
+
+```{r}
+#| label: wd-3-string
+surveys |> filter(str_detect(species, regex("^D", ignore_case = TRUE)))
+```
+
+-   Date using lubridate (Lab 2)
+
+```{r}
+#| label: wd-3-date
+surveys_dates <- surveys |>
+  mutate(sample_date = make_date(year, month, day)) |>
+  filter(sample_date >= ymd("1990-01-01"))
+```
+
+**WD-4: I can modify existing variables and create new variables in a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
+
+-   Numeric Example 1 (Lab 7)
+
+```{r}
+#| label: wd-4-numeric-ex-1
+fish <- read_csv(here("Week 7", "fish_data", "BlackfootFish.csv"), show_col_types = FALSE)
+fish |> mutate(length_scaled = (length - min(length, na.rm = TRUE)) /
+                 (max(length, na.rm = TRUE) - min(length, na.rm = TRUE)))
+```
+
+-   Numeric Example 2 (Lab 2)
+
+```{r}
+#| label: wd-4-numeric-ex-2
+surveys |> mutate(weight_kg = weight / 1000)
+```
+
+-   Factor Example 1 (renaming levels; Lab 3)
+
+```{r}
+#| label: wd-4-factor-ex-1
+teacher_evals_clean |> mutate(sex = fct_recode(sex, Female = "f", Male = "m"))
+```
+
+-   Factor Example 2 (reordering levels; Lab 2)
+
+```{r}
+#| label: wd-4-factor-ex-2
+surveys |> mutate(species = fct_relevel(species, "DM", "DO"))
+```
+
+-   Character using stringr (Lab 2)
+
+```{r}
+#| label: wd-4-string
+surveys |> mutate(plot_label = str_c("Plot ", plot_id))
+```
+
+-   Date using lubridate (Lab 2)
+
+```{r}
+#| label: wd-4-date
+surveys |> mutate(sample_date = make_date(year, month, day))
+```
+
+**WD-5: I can use mutating joins to combine multiple dataframes.**
+
+-   `left_join()` Example 1 (Lab 5)
+
+```{r}
+#| label: wd-5-left-ex-1
+gym_members <- get_fit_now_member |>
+  left_join(get_fit_now_checkin, by = "id")
+```
+
+-   `right_join()` Example 1 (Lab 3 / constructed)
+
+```{r}
+#| label: wd-5-right
+teacher_ids <- teacher_evals_clean |> distinct(teacher_id)
+teacher_right <- teacher_ids |> right_join(teacher_evals_clean, by = "teacher_id")
+```
+
+-   `left_join()` or `right_join()` Example 2 (Lab 3)
+
+```{r}
+#| label: wd-5-left-right-ex-2
+course_meta <- teacher_evals_clean |> distinct(course_id, seniority)
+teacher_evals_joined <- teacher_evals_clean |> left_join(course_meta, by = "course_id")
+```
+
+-   `inner_join()` Example 1 (Lab 5)
+
+```{r}
+#| label: wd-5-inner-ex-1
+suspects_base <- get_fit_now_member |>
+  filter(str_starts(id, "48Z"), membership_status == "gold") |>
+  left_join(get_fit_now_checkin, by = "id") |>
+  mutate(date = ymd(date))
+```
+
+-   `inner_join()` Example 2 (Lab 5)
+
+```{r}
+#| label: wd-5-inner-ex-2
+car_candidates <- drivers_license |>
+  filter(car_make == "Tesla", car_model == "Model S", hair_color == "red") |>
+  select(license_id, plate_number, height)
+suspects <- suspects_base |>
+  inner_join(person, by = c("person_id" = "id")) |>
+  inner_join(car_candidates, by = "license_id")
+```
+
+**WD-6: I can use filtering joins to filter rows from a dataframe.**
+
+-   `semi_join()`
+
+```{r}
+#| label: wd-6-semi
+witnesses <- person |>
+  filter(address_street_name == "Northwestern Dr") |>
+  slice_max(address_number, n = 1)
+interview_notes <- interview |> semi_join(witnesses, by = c("person_id" = "id"))
+```
+
+-   `anti_join()`
+
+```{r}
+#| label: wd-6-anti
+alibis <- facebook_event_checkin |> filter(date == ymd("2018-01-15")) |> distinct(person_id)
+still_suspects <- suspects |> anti_join(alibis, by = c("person_id" = "person_id"))
+```
+
+**WD-7: I can pivot dataframes from long to wide and visa versa**
+
+-   `pivot_longer()`
+
+```{r}
+#| label: wd-7-long
+fish |>
+  pivot_longer(cols = c(length, weight), names_to = "measure", values_to = "value")
+```
+
+-   `pivot_wider()`
+
+```{r}
+#| label: wd-7-wide
+fish |>
+  count(year, species) |>
+  pivot_wider(names_from = species, values_from = n, values_fill = 0)
+```
+
+## Reproducibility
+
+**R-1: I can create professional looking, reproducible analyses using RStudio projects, Quarto documents, and the here package.**
+
+The following assignments satisfy the above criteria: - Lab 1 (Quarto formatting and execution options) - Lab 2 (here paths, embedded resources) - Lab 3 (Project-based paths with here) - Lab 7 (Quarto + here for fish data) - Lab 10 (Quarto with embed-resources and package declarations)
+
+**R-2: I can write well documented and tidy code.**
+
+-   Example of **ggplot2** plotting (Challenge 2)
+
+```{r}
+#| label: r-2-1
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  labs(title = "Rodent Weights by Species",
+       subtitle = "Pastel palette + minimal grid",
+       x = "Species", y = "Weight (grams)") +
+  theme_minimal(base_size = 13)
+```
+
+-   Example of **dplyr** pipeline (Lab 3)
+
+```{r}
+#| label: r-2-2
+teacher_evals_clean |>
+  group_by(teacher_id) |>
+  summarise(mean_q1 = mean(SET_score_avg, na.rm = TRUE),
+            n_courses = n()) |>
+  filter(n_courses >= 5)
+```
+
+-   Example of function formatting (Lab 8)
+
+```{r}
+#| label: r-2-3
+rescale_column <- function(df, cols) {
+  df |> mutate(across({{ cols }}, rescale_01))
+}
+```
+
+**R-3: I can write robust programs that are resistant to changes in inputs.**
+
+-   Example (any context; Lab 7)
+
+```{r}
+#| label: r-3-example
+fish |> summarise(rows_with_missing = sum(!complete.cases(.)))
+```
+
+-   Example (function stops; Lab 7)
+
+```{r}
+#| label: r-3-function-stops
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) stop("rescale_01() requires a numeric vector.")
+  if (length(x) <= 1) stop("rescale_01() needs length > 1.")
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(x * 0)
+  (x - rng[1]) / diff(rng)
+}
+```
+
+## Data Visualization & Summarization
+
+**DVS-1: I can create visualizations for a *variety* of variable types (e.g., numeric, character, factor, date)**
+
+-   At least two numeric variables (Lab 2)
+
+```{r}
+#| label: dvs-1-num
+ggplot(surveys, aes(x = weight, y = hindfoot_length)) +
+  geom_point(alpha = 0.4)
+```
+
+-   At least one numeric variable and one categorical variable (Lab 2)
+
+```{r}
+#| label: dvs-2-num-cat
+ggplot(surveys, aes(x = species, y = weight)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5)
+```
+
+-   At least two categorical variables (Lab 8 pivot_table visualization idea)
+
+```{r}
+#| label: dvs-2-cat
+ggplot(surveys, aes(x = plot_type, fill = species)) +
+  geom_bar(position = "fill")
+```
+
+-   Dates (time series plot; Lab 2)
+
+```{r}
+#| label: dvs-2-date
+surveys_dates |>
+  ggplot(aes(x = sample_date, y = weight)) +
+  geom_line(alpha = 0.3)
+```
+
+**DVS-2: I use plot modifications to make my visualization clear to the reader.**
+
+-   Modify plot theme (Challenge 2 spicy)
+
+```{r}
+#| label: dvs-2-ex-1
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  theme_minimal(base_size = 13)
+```
+
+-   Accessible colors (Challenge 2 medium)
+
+```{r}
+#| label: dvs-2-ex-2
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, size = 1.2, width = 0.15) +
+  scale_fill_viridis_d(end = 0.9)
+```
+
+-   Clear plot titles (Challenge 2 hot)
+
+```{r}
+#| label: dvs-2-ex-3
+color_lookup <- c("F" = "#f97316", "M" = "#06b6d4", "NI" = "#a855f7", "unknown" = "#94a3b8")
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "gray20") +
+  geom_jitter(alpha = 0.4, size = 1, width = 0.15, color = "gray20") +
+  scale_fill_manual(values = color_lookup) +
+  labs(
+    title = paste0(
+      "Weights by sex: ",
+      "<span style='color:", color_lookup["F"], "'>F</span> | ",
+      "<span style='color:", color_lookup["M"], "'>M</span> | ",
+      "<span style='color:", color_lookup["NI"], "'>NI</span> | ",
+      "<span style='color:", color_lookup["unknown"], "'>Unknown</span>"
+    ),
+    x = "Species", y = "Weight (grams)"
+  ) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none", plot.title = ggtext::element_markdown())
+```
+
+-   Modify text for readability (Challenge 2 spicy)
+
+```{r}
+#| label: dvs-2-ex-4
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+-   Reorder legend (if legend present) (Challenge 2 medium)
+
+```{r}
+#| label: dvs-2-ex-5
+ggplot(surveys, aes(x = species, y = weight, fill = fct_relevel(sex, "F", "M", "NI", "unknown"))) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, size = 1.2, width = 0.15) +
+  scale_fill_viridis_d(end = 0.9, name = "Sex")
+```
+
+**DVS-3: I show creativity in my visualizations**
+
+-   Non-standard colors (Example 1; Challenge 2 spicy)
+
+```{r}
+#| label: dvs-3-1-ex-1
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "#0f172a") +
+  geom_jitter(alpha = 0.45, size = 1, width = 0.12, color = "#0f172a") +
+  theme_minimal(base_size = 13) +
+  theme(plot.background = element_rect(fill = "#0b1221", color = NA))
+```
+
+-   Non-standard colors (Example 2; Challenge 2 hot)
+
+```{r}
+#| label: dvs-3-1-ex-2
+ggplot(surveys, aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA, color = "gray20") +
+  geom_jitter(alpha = 0.4, size = 1, width = 0.15, color = "gray20") +
+  scale_fill_manual(values = color_lookup) +
+  theme_bw()
+```
+
+-   Annotations (Lab 10 coverage plot idea)
+
+```{r}
+#| label: dvs-3-2
+ci_all <- tibble(
+  estimate = rnorm(10, 0.5, 0.1),
+  conf.low = estimate - 0.1,
+  conf.high = estimate + 0.1,
+  cover = sample(c(0,1), 10, replace = TRUE)
+) |>
+  mutate(iter = row_number())
+ci_all |>
+  ggplot(aes(y = iter, x = estimate, color = factor(cover))) +
+  geom_segment(aes(x = conf.low, xend = conf.high, yend = iter)) +
+  geom_point(size = 1.5) +
+  geom_text(aes(label = cover), hjust = -0.2, size = 2.5)
+```
+
+-   Creative geometries (Lab 10 coverage plot)
+
+```{r}
+#| label: dvs-3-3
+ci_all |>
+  ggplot(aes(y = iter, x = estimate, color = factor(cover))) +
+  geom_segment(aes(x = conf.low, xend = conf.high, yend = iter)) +
+  geom_point(size = 1.5) +
+  geom_vline(xintercept = 0.5, linetype = "dashed")
+```
+
+**DVS-4: I can calculate numerical summaries of variables.**
+
+-   Example using `summarize()` (Lab 3)
+
+```{r}
+#| label: dvs-4-summarize
+teacher_evals_clean |>
+  summarise(unique_instructors = n_distinct(teacher_id),
+            unique_courses    = n_distinct(course_id),
+            avg_resp          = mean(resp_share))
+```
+
+-   Example using `across()` (Lab 7 missingness)
+
+```{r}
+#| label: dvs-4-across
+fish |>
+  summarise(rows_with_missing = sum(!complete.cases(.)),
+            across(everything(), ~ sum(is.na(.))))
+```
+
+**DVS-5: I can find summaries of variables across multiple groups.**
+
+-   Example 1 (Lab 3)
+
+```{r}
+#| label: dvs-5-1
+teacher_evals_clean |>
+  group_by(teacher_id, course_id) |>
+  summarise(n_questions = n_distinct(question_no), .groups = "drop")
+```
+
+-   Example 2 (Lab 3)
+
+```{r}
+#| label: dvs-5-2
+teacher_evals_clean |>
+  filter(question_no == 901) |>
+  group_by(teacher_id) |>
+  summarise(mean_q1 = mean(SET_score_avg, na.rm = TRUE),
+            n_courses = n()) |>
+  filter(n_courses >= 5)
+```
+
+**DVS-6: I can create tables which make my summaries clear to the reader.**
+
+-   Modify column names (Lab 10)
+
+```{r}
+#| label: dvs-6-ex-1
+baby_counts <- tibble(correct = 0:4, count = c(100,200,300,250,150)) |>
+  mutate(prop = count / sum(count))
+baby_counts |>
+  gt() |>
+  cols_label(correct = "Babies Correct", count = "Count", prop = "Proportion")
+```
+
+-   Modify text (bold headers) (Lab 10)
+
+```{r}
+#| label: dvs-6-ex-2
+baby_counts |>
+  gt() |>
+  tab_style(style = cell_text(weight = "bold"),
+            locations = list(cells_title(groups = "title"), cells_stub()))
+```
+
+-   Arrange ordering (Lab 10)
+
+```{r}
+#| label: dvs-6-ex-3
+baby_counts |>
+  arrange(desc(prop)) |>
+  gt()
+```
+
+**DVS-7: I show creativity in my tables.**
+
+-   Non-default colors (Lab 10)
+
+```{r}
+#| label: dvs-7-ex-1
+baby_counts |>
+  gt() |>
+  data_color(columns = prop,
+             palette = col_numeric(c("#e0f2fe", "#0ea5e9"), domain = c(0, max(baby_counts$prop))))
+```
+
+-   Modify layout (pivot) (Lab 8)
+
+```{r}
+#| label: dvs-7-ex-2
+surveys |>
+  count(sex, species) |>
+  pivot_wider(names_from = species, values_from = n, values_fill = 0) |>
+  gt()
+```
+
+## Program Efficiency
+
+**PE-1: I can write concise code which does not repeat itself.**
+
+-   Single function call with multiple inputs (Lab 8)
+
+```{r}
+#| label: pe-1-one-call
+surveys |> summarise(across(c(weight, hindfoot_length), mean, na.rm = TRUE))
+```
+
+-   Using `across()` (Lab 8)
+
+```{r}
+#| label: pe-1-across
+surveys |> mutate(across(where(is.numeric), ~ .x / max(.x, na.rm = TRUE)))
+```
+
+-   Using `map()` family (Lab 10)
+
+```{r}
+#| label: pe-1-map-1
+ci_dat <- map(.x = 1:5, .f = ~ mycifun(beta0 = 3, beta1 = 0.5, n = 100))
+```
+
+**PE-2: I can write functions to reduce repetition in my code.**
+
+-   Example 1: Vector function (Lab 7)
+
+```{r}
+#| label: pe-2-1
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) stop("rescale_01() requires a numeric vector.")
+  if (length(x) <= 1) stop("rescale_01() needs length > 1.")
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(x * 0)
+  (x - rng[1]) / diff(rng)
+}
+```
+
+-   Example 2: Data frame function (Lab 8)
+
+```{r}
+#| label: pe-2-2
+rescale_column <- function(df, cols) {
+  df |> mutate(across({{ cols }}, rescale_01))
+}
+```
+
+-   Example 3: Works with multiple inputs (Lab 8)
+
+```{r}
+#| label: pe-2-3
+pivot_table <- function(df, row, col) {
+  df |>
+    count({{ row }}, {{ col }}) |>
+    pivot_wider(names_from = {{ col }}, values_from = n, values_fill = 0) |>
+    janitor::adorn_totals(where = c("row", "col"))
+}
+```
+
+**PE-3:I can use iteration to reduce repetition in my code.**
+
+-   Using `across()` (Lab 7)
+
+```{r}
+#| label: pe-3-across
+missing_summary <- fish |>
+  summarise(rows_with_missing = sum(!complete.cases(.)),
+            across(everything(), ~ sum(is.na(.))))
+```
+
+-   Using `map()` with one input (Lab 10)
+
+```{r}
+#| label: pe-3-map-1
+results <- map_int(.x = 1:10000, .f = ~ randomBabies(4))
+```
+
+-   Using `map()` with more than one input (Lab 10)
+
+```{r}
+#| label: pe-3-map-2
+ci_dat <- map2(.x = rep(3, 5), .y = rep(0.5, 5), .f = ~ mycifun(beta0 = .x, beta1 = .y, n = 100))
+```
+
+**PE-4: I can use modern tools when carrying out my analysis.**
+
+-   Not superseded/deprecated (Lab 3)
+
+```{r}
+#| label: pe-4-1
+teacher_evals_clean |>
+  summarise(unique_instructors = n_distinct(teacher_id))
+```
+
+-   Wrangling pipeline into `ggplot()` (Challenge 2)
+
+```{r}
+#| label: pe-4-2
+surveys |>
+  filter(!is.na(sex)) |>
+  ggplot(aes(x = species, y = weight, fill = sex)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, size = 1.2, width = 0.15) +
+  scale_fill_viridis_d(end = 0.9)
+```
+
+## Data Simulation & Statisical Models
+
+**DSSM-1: I can simulate data from a *variety* of probability models.**
+
+-   Example 1 (Lab 10 random babies)
+
+```{r}
+#| label: dsm-1-1
+randomBabies <- function(n_babies) {
+  assignments <- sample(seq_len(n_babies))
+  sum(assignments == seq_len(n_babies))
+}
+results <- map_int(.x = 1:10000, .f = ~ randomBabies(4))
+```
+
+-   Example 2 (Lab 10 CI coverage)
+
+```{r}
+#| label: dsm-1-2
+mycifun <- function(beta0, beta1, n) {
+  x <- runif(n, min = 0, max = 1)
+  ep <- rnorm(n, mean = 0, sd = 1)
+  y <- beta0 + beta1 * x + ep
+  lm(y ~ x) |>
+    tidy(conf.int = TRUE) |>
+    filter(term == "x") |>
+    mutate(cover = if_else(beta1 >= conf.low & beta1 <= conf.high, 1, 0)) |>
+    select(estimate, conf.low, conf.high, cover)
+}
+```
+
+**DSSM-2: I can conduct common statistical analyses in R.**
+
+-   Example 1 (Lab 2 ANOVA)
+
+```{r}
+#| label: dsm-2-1
+summary(aov(weight ~ species, data = surveys))
+```
+
+-   Example 2 (Lab 1 t-test)
+
+```{r}
+#| label: dsm-2-2
+t.test(len ~ supp, data = ToothGrowth, var.equal = FALSE)
+```
+
+-   Example 3 (Lab 3 group summary for question counts)
+
+```{r}
+#| label: dsm-2-3
+teacher_evals_clean |>
+  group_by(teacher_id, course_id) |>
+  summarise(n_questions = n_distinct(question_no), .groups = "drop")
+```
+
+## Revising My Thinking + Extending My Thinking
+
+-   How did you revise your thinking across assignments? Example: in Lab 7 I rewrote `rescale_01()` to validate inputs and handle zero-range vectors:
+
+```{r}
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) stop("rescale_01() requires a numeric vector.")
+  if (length(x) <= 1) stop("rescale_01() needs length > 1.")
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(x * 0)
+  (x - rng[1]) / diff(rng)
+}
+```
+
+Looking back at the feedback, I realized that several key components were missing from my original portfolio, including joins, pivots, tables, and examples of iteration. To address this, I added mutating and filtering joins using work from Lab 5, making sure each join example was clearly demonstrated and explained. I also incorporated pivoting techniques by building a reusable `pivot_table` function from Lab 8, which helped me show both long-to-wide and wide-to-long transformations. For tables, I included a creative **gt** table from Lab 10, using formatting tools to make the output cleaner and easier to read. Finally, I added map-based simulations from Lab 10 to show iteration in a better way.
+
+Beyond simply meeting the minimum requirements, I tried to push my work further and make it more stylistically polished. I redesigned my Challenge 2 visualizations to include a themed look, using **ggtext** to place the legend inside the title for a more integrated feel. I also experimented with color and layout by using `data_color()` in my **gt** tables to highlight patterns that would otherwise be hard to see. To reduce repetition across my portfolio, I created helper functions such as `rescale_column`, `pivot_table`, `make_plot`, and `style_plot`, which made the analysis cleaner and more consistent. These additions weren’t required, but they helped me better understand how to structure reusable code and create outputs that look intentional and professional.
+
+## Peer Support & Collaboration
+
+"Clean, readable formatting/consistent line breaks, named arguments, and solid indentation. Two small tweaks: add brief comments before major steps and use clear chunk labels (e.g., load-data, clean-evals) for skimmability. For long pipes, keep one verb per line. Maybe for plots/tables, make sure axis labels and captions stand alone. Overall, polished work, and much better understanding of the code than me, haha, nice job!" I’m proud of this peer review because I didn’t just say something nice, I actually noticed real things that could be improved. I pointed out small changes that would make the work easier to read and understand, which made the feedback feel more helpful and honest. It showed me that I’m paying closer attention now and can give feedback that actually means something.
+
+This is probably where I had the most surprising growth because as mentioned in my lightening essays, I do not really like working in groups. I believe the formatting was interesting with the coder and typer because if both people opted to follow these guidelines exactly, it actually led to a healthy conversation and problem solving while also maintaining a level of respect. I mentioned Liam, who I was partnered with around 4-5 times. He was great because he clearly had a vast knowledge of coding language, but he remained very respectful throughout the entire process, and really followed the guidelines set in place for a healthy collaboration. I grew from him because when I was grouped with other people, I took into consideration how he patient and listened to what I had to say, so I incorporated that to how interacted with my other partners. Also I grew on the way to think about the coding language. Sometimes it's easier to speak with peers going through the same thing as you because then you find common problems and can share solutions. The growth comes from being able to ask questions and feel a little silly at times even if it seems really simple. The more you do it (through our peer collaboration), the more you feel comfortable asking those questions and not feeling bad about asking them. I learned that from this class, because prior to this, I mean I have obviously been in group projects before, but generally I find it to be a waste of time. Both people generally just want to complete the task and sometimes that can be done without interacting at all. So this peer activity forced us to interact and find a respectful way of communicating ideas to one another, without it feeling like you are not gaining anything from it.
