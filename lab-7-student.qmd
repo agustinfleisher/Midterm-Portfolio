@@ -1,0 +1,213 @@
+---
+title: "Lab 7: Functions + Fish"
+author: "Your name here!"
+format: html
+editor: source
+embed-resources: true
+---
+
+The goal of this lab is learn more about exploring missing data and writing
+modular code.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(lubridate)
+
+fish <- read_csv(
+  here("Week 7", "fish_data", "BlackfootFish.csv"),
+  show_col_types = FALSE
+)
+
+```
+
+## The Data
+
+This lab's data concerns mark-recapture data on four species of trout from the
+Blackfoot River outside of Helena, Montana. These four species are
+**rainbow trout (RBT)**, **westslope cutthroat trout (WCT)**, **bull trout**,
+and **brown trout**.
+
+Mark-recapture is a common method used by ecologists to estimate a population's
+size when it is impossible to conduct a census (count every animal). This method
+works by *tagging* animals with a tracking device so that scientists can track
+their movement and presence.
+
+## Data Exploration
+
+The measurements of each captured fish were taken by a biologist on a raft in
+the river. The lack of a laboratory setting opens the door to the possibility of
+measurement errors.
+
+**1. Let's look for missing values in the dataset. Output ONE table that answers BOTH of the following questions:**
+
++ **How many observations have missing values?**
++ **What variable(s) have missing values present?**
+
+::: callout-tip
+# You should use `across()`!
+:::
+
+```{r}
+#| label: find-missing-values
+missing_summary <- fish |>
+  summarise(
+    rows_with_missing = sum(!complete.cases(.)),
+    across(everything(), ~ sum(is.na(.)))
+  )
+
+missing_summary
+```
+
+**2. Use a pivot to transform your summary table from Question 1 into a table that is easier to read.** 
+
+```{r}
+#| label: pivot-summary-table
+
+missing_summary |>
+  pivot_longer(
+    cols = -rows_with_missing,
+    names_to = "variable",
+    values_to = "missing_values"
+  ) |>
+  filter(missing_values > 0) |>
+  arrange(desc(missing_values))
+
+```
+
+**3. Create ONE thoughtful visualization that explores the frequency of missing values across the different years, sections, and trips.**
+
+```{r}
+#| label: visual-of-missing-values-over-time
+fish |>
+  pivot_longer(
+    cols = c(length, weight, mark, section, species),
+    names_to = "variable",
+    values_to = "value"
+  ) |>
+  mutate(is_missing = is.na(value)) |>
+  group_by(year, trip, variable) |>
+  summarise(prop_missing = mean(is_missing), .groups = "drop") |>
+  ggplot(aes(x = year, y = prop_missing, color = variable)) +
+  geom_line() +
+  facet_wrap(~trip) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "Year",
+    y = "Percent Missing",
+    color = "Variable",
+    title = "Missingness by Year and Trip"
+  )
+```
+
+## Rescaling the Data
+
+If I wanted to rescale every quantitative variable in my dataset so that they
+only have values between 0 and 1, I could use this code:
+
+```{r}
+#| echo: true
+#| eval: false
+
+fish <- fish |> 
+  mutate(length = (length - min(length, na.rm = TRUE)) / 
+           (max(length, na.rm = TRUE) - min(length, na.rm = TRUE)), 
+         weight = (weight - min(weight, na.rm = TRUE)) / 
+           (max(weight, na.rm = TRUE) - min(length, na.rm = TRUE)))
+```
+
+
+**4. Transform the repeated process above into a `rescale_01()` function. Your function should...**
+
++ **... take a single vector as input.**
++ **... return the rescaled vector.**
+
+```{r}
+#| label: write-rescale-function
+
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) {
+    stop("rescale_01() requires a numeric vector.")
+  }
+  if (length(x) <= 1) {
+    stop("rescale_01() needs a vector with length > 1.")
+  }
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) {
+    return(x * 0)
+  }
+  (x - rng[1]) / diff(rng)
+}
+
+```
+
+::: callout-tip
+# Efficiency 
+
+Think about the efficiency of the function you wrote. Are you calling the
+**same** function multiple times? You might want to look into the `range()` 
+function. 
+:::
+
+**5. Let's incorporate some input validation into your function. Modify your previous code so that the function stops if ...**
+
++ **... the input vector is not numeric.**
++ **... the length of the input vector is not greater than 1.**
+
+::: callout-tip
+# Modify Previous Code
+
+Do not create a new code chunk here -- simply add these stops to your function
+above!
+:::
+
+## Test Your Function
+
+**6. Run the code below to test your function. Verify that the maximum of your rescaled vector is 1 and the minimum is 0!**
+
+```{r}
+#| label: verify-rescale-function
+
+x <- c(1:25, NA)
+
+rescaled <- rescale_01(x)
+min(rescaled, na.rm = TRUE)
+max(rescaled, na.rm = TRUE)
+```
+
+Next, let's test the function on the `length` column of the `BlackfootFish` data.
+
+**7. The code below makes a histogram of the original values of `length`. Add a plot of the rescaled values of `length`. Output your plots side-by-side, so the reader can confirm the only aspect that has changed is the scale.**
+
+::: callout-warning
+This will require you to call your `rescale_01()` function within a `mutate()`
+statement in order to create a `length_scaled` variable.
+:::
+
+```{r}
+#| label: compare-original-with-rescaled-lengths
+#| layout-ncol: 2
+
+fish |>  
+  ggplot(aes(x = length)) + 
+  geom_histogram(binwidth = 45) +
+  labs(x = "Original Values of Fish Length (mm)") +
+  scale_y_continuous(limits = c(0,4000))
+
+fish |>
+  mutate(length_scaled = rescale_01(length)) |>
+  ggplot(aes(x = length_scaled)) +
+  geom_histogram(binwidth = 0.05, fill = "#5B8FF9") +
+  labs(x = "Rescaled Length (0-1)") +
+  scale_y_continuous(limits = c(0,4000))
+
+```
+
+::: callout-tip
+1. Set the y-axis limits for both plots to go from 0 to 4000 to allow for direct comparison across plots.
+
+2. Pay attention to `binwidth`!
+
+3. Use a Quarto code chunk option to put the plots side-by-side.
+:::

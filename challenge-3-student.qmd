@@ -1,0 +1,95 @@
+---
+title: "Challenge 3: Extending Teaching Evaluation Investigations"
+author: "Agustin Fleisher"
+format: html
+editor: source
+embed-resources: true
+---
+
+```{r}
+#| label: packages
+library(tidyverse)
+library(here)
+
+```
+
+```{r}
+#| label: load-data
+teacher_evals <- read_csv(here("Week 3", "teacher_evals", "teacher_evals.csv"))
+
+```
+
+
+# Chi-Square Test of Independence
+
+Let’s compare the level of SET ratings for Question 3 (The professor used activities to make the class more engaging.) between senior instructors and junior instructors.
+
+**1. Using the original `teacher_evals` dataset (not `teacher_evals_clean`), create a new dataset that accomplishes the following with *one*`dplyr` pipeline:**
+
+-   **includes responses for Question 3 only**
+-   **creates a new variable called `SET_level` that is “excellent” if the `SET_score_avg` is 4 or higher (inclusive) and “standard” otherwise**
+-   **creates a new variable called `sen_level` that is “junior” if `seniority` is 4 or less (inclusive) and “senior” otherwise**
+-   **contains only the variables we are interested in –- `course_id`, `SET_level`, and `sen_level`**
+-   **saves the mutated data into a new object named `teacher_evals_compare`.**
+
+::: callout-tip
+Helpful functions: `filter()`, `mutate()`, `if_else()`, `select()`
+:::
+
+```{r}
+#| label: cleaning-data-for-junior-senior-comparison
+teacher_evals_compare <- teacher_evals |>
+  filter(question_no == 903) |>
+  mutate(
+    SET_level = if_else(SET_score_avg >= 4, "excellent", "standard"),
+    sen_level = if_else(seniority <= 4, "junior", "senior")
+  ) |>
+  select(course_id, SET_level, sen_level)
+
+```
+
+**2. Using the new dataset and your `ggplot2` skills, recreate the following bar plot:**
+
+![](https://atheobold.github.io/groupworthy-data-science/labs/instructions/images/challenge-3-plot-to-recreate.png)
+
+```{r}
+ggplot(teacher_evals_compare, aes(x = sen_level, fill = SET_level)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(
+    values = c("excellent" = "#8E7CC3",  # purple
+               "standard"  = "#C8B28E")  # tan
+  ) +
+  labs(
+    title = "Evaluation of Teachers' Use of Activities",
+    x = "Seniority Level",
+    y = "Percent of evaluations",
+    fill = "Evaluation Rating"
+  ) +
+  theme_minimal()
+```
+I looked up how to get those colors, idk if you want a link to that.
+
+**3. Look up the documentation for `chisq.test()` to carry out a chi-square test of independence between the SET level and instructor seniority level in your new dataset.**
+
+```{r}
+#| label: chi-square-test
+table_compare <- table(teacher_evals_compare$SET_level, teacher_evals_compare$sen_level)
+chisq.test(table_compare)
+```
+
+**4. Draw a conclusion about the independence of evaluation level and seniority level based on your chi-square test.**
+
+The chi-square test shows a p-value of 0.001997, which is less than 0.05. Therefore, we reject the null hypothesis of independence and conclude that evaluation level and instructor seniority level are significantly associated.
+
+# Study Critique
+
+Part of the impetus behind this study was to investigate characteristics of a course or an instructor that might affect student evaluations of teaching that are **not** explicitly related to teaching effectiveness. For instance, it has been shown that gender identity and gender express affect student evaluations of teaching ([an example](https://link.springer.com/article/10.1007/s10755-014-9313-4?nr_email_referer=1)).
+
+**5. If you were to conduct this study at Cal Poly, what are two other variables you would like to collect that you think might be related to student evaluations? These should be course or instructor characteristics that [were not]{.underline} collected in this study.**
+
+Two additional variables I would collect are the time of day the class meets and the friendliness or communication style of the professor. The time a class is held might influence how engaged or focused students are during evaluations, while an instructor’s friendliness or way of speaking could affect how positively students perceive their teaching, regardless of actual content quality. Pretty sure I did not see these options in the link.
+
+**6. Explain what effects / relationships you would expect to see for each of the two variables you outlined.**
+
+For the time of day variable, I would expect courses held earlier in the morning to receive slightly lower evaluations (same for at late classes), since students are often less alert or motivated during early (or late) classes. For friendliness or communication style, I would expect professors who are more approachable and positive in their tone to receive higher evaluations, as students tend to rate instructors more favorably when they feel respected and engaged.

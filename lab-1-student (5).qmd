@@ -1,0 +1,110 @@
+---
+title: "Lab 1: Introduction to Quarto"
+author: "Agustin Fleisher"
+date: "September 22, 2025"
+editor: source
+embed-resources: true
+execute:
+  echo: true
+  error: true
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    toc: true
+    theme: litera
+---
+
+# Exploring Quarto Documents
+
+## Specifying Global Execute Options
+
+Execution options specify how the R code in your Quarto document should be
+displayed. This [guide](https://quarto.org/docs/computations/execution-options.html)
+provides descriptions on the options you can specify in a document's execution.
+
+**Question 1** -- Add your name and the date to the YAML. 
+
+**Question 2** -- Add an `execute` line to your YAML that includes the following
+options, (1) your source code is always output on the page, and (2) your
+document will render even if there are errors.
+
+## Tooth Growth Dataset
+
+```{r}
+#| echo: true
+#| label: practicing-running-code
+
+# Load a dataset into the R Environment.
+data(ToothGrowth)
+
+# Look at the summary of the variables in the dataset.
+summary(ToothGrowth)
+```
+
+**Question 3** -- Let's spice this code up a bit. Delete `1 + 1` from the code
+chunk and paste in the code provided in the Lab 1 instructions. 
+
+## Check the Data Documentation
+
+**Question 4** -- In your **console** (*not* in the Quarto document), type
+`?ToothGrowth` (or alternatively `help(ToothGrowth)`. Use the information that
+pops up in the *Help* pane in RStudio to fill in the blanks below. 
+
+*This dataset investigates the effect of **Vitamin C** on tooth growth in **guinea pigs**.*
+
+*The two supplement delivery methods include **OJ (orange juice)** and **VC (ascorbic acid)**.*
+
+*`ToothGrowth` is a data frame with **60 observations** and **3 variables**.*
+
+**Question 5** -- *Before* the code chunk, change the "Running the Provided
+Code" section header to a header that better describes the contents of this
+section (e.g., Tooth Growth Dataset).
+
+## Creating a Plot
+
+**Question 6** -- Replace the `plot(pressure)` code with the code provided in the Lab 1 instructions.
+
+```{r}
+#| echo: true
+#| label: creating-a-plot
+#| layout-ncol: 2
+#| fig-align: center
+#| fig-cap: ["OJ group shows slightly higher tooth lengths on average",
+#|            "Higher supplement doses lead to greater tooth growth"]
+library(tidyverse)
+
+ggplot(data = ToothGrowth, 
+       mapping = aes(x = supp, y = len)) +
+  geom_boxplot() +
+  labs(x = "Supplement", y = "Length of Teeth (mm)")
+
+ToothGrowth %>% 
+  mutate(dose = as.factor(dose)) %>% 
+  ggplot(mapping = aes(x = dose, y = len)) +
+  geom_boxplot() +
+  labs(x = "Dose of Supplement (mg/day)", y = "Length of Teeth (mm)")
+```
+
+Now, run this code chunk! You should see two side-by-side boxplots, one plot
+comparing tooth length between the two supplement delivery methods and one plot
+comparing tooth length between the three different dosages uses. 
+
+**Question 7** -- Read over the [Quarto documentation on figure options](https://quarto.org/docs/authoring/figures.html#computations)
+and add an option (`#|`) to the above code chunk to make the figures print
+side-by-side (i.e., in one row) in the rendered HTML file. 
+
+**Question 8** -- Specify in the code chunk options that these boxplots 
+should be **center aligned** (also found in the Quarto documentation).
+
+**Question 9** -- Specify a **figure caption** for the boxplots (using a
+code-chunk option). This is a bit tricky! There are two plots, so you will need
+to figure out how to specify a different caption for each plot. 
+```{r}
+t.test(len ~ supp, data = ToothGrowth, var.equal = FALSE)
+```
+1. Conclusion: The p-value from Welch’s two-sample t-test was 0.06063 (> 0.05). We fail to reject the null hypothesis. In these data, there isn’t strong evidence that the mean tooth length differs between the OJ and VC methods.
+
+2. Confidence interval: Using the default 95% confidence level, the CI for the difference in means (OJ − VC) is [−0.171, 7.571] mm. Because this interval includes 0, the true difference could be zero. This is consistent with the sample means (OJ = 20.663, VC = 16.963), which suggest OJ tends to be higher on average but not significantly so at α = 0.05. (I had to get help for this one)
+
+## Interpretation of the Two-Sample t-Test
